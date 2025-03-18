@@ -9,6 +9,7 @@ import java.util.prefs.PreferencesFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,11 +29,14 @@ public class MongoDBPreferencesTest {
 
     @BeforeAll
     public static void init() {
-        url = String.format("%s/database", container.getConnectionString());
-
         System.setProperty(PreferencesFactory.class.getCanonicalName(), MongoDBPreferencesFactory.class.getCanonicalName());
+    }
+
+    @BeforeEach
+    public void setup() {
+        String collection = UUID.randomUUID().toString().substring(0, 8);
+        url = String.format("%s/database.%s", container.getConnectionString(), collection);
         System.setProperty(String.format("%s.url", prefix), url);
-        System.setProperty(String.format("%s.collection", prefix), UUID.randomUUID().toString().substring(0, 8));
     }
 
     @AfterAll

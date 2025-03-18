@@ -1,13 +1,13 @@
 package br.dev.jadl.prefs;
 
-import com.mongodb.MongoClientURI;
+import com.mongodb.ConnectionString;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
-import org.bson.Document;
 
-import java.util.Objects;
 import java.util.prefs.Preferences;
 import java.util.prefs.PreferencesFactory;
+
+import org.bson.Document;
 
 public class MongoDBPreferencesFactory implements PreferencesFactory {
 
@@ -29,23 +29,26 @@ public class MongoDBPreferencesFactory implements PreferencesFactory {
         private static final Preferences instance = preferences("user");
     }
 
-    private static Preferences preferences(String scope) {
-        String prefix = MongoDBPreferences.class.getCanonicalName();
+    private static Preferences preferences(final String scope) {
 
-        String url = property(prefix, scope, "url");
-        String database = Objects.requireNonNull(new MongoClientURI(url).getDatabase());
-        String collection = property(prefix, scope, "collection");
+        final ConnectionString cs = new ConnectionString(property("url", scope));
 
-        MongoCollection<Document> c = MongoClients.create(url)
-                .getDatabase(database)
-                .getCollection(collection);
+        String collection = cs.getCollection();
+        if (collection == null) {
+            collection = property("collection", scope);
+        }
+
+        MongoCollection<Document> c = MongoClients.create(cs)
+            .getDatabase(cs.getDatabase())
+            .getCollection(collection);
 
         return new MongoDBPreferences(c);
     }
 
-    private static String property(String prefix, String scope, String key) {
-        String scoped = String.format("%s.%s.%s", prefix, scope, key);
-        String unscoped = String.format("%s.%s", prefix, key);
+    private static String property(final String key, final String scope) {
+        final String prefix = MongoDBPreferences.class.getCanonicalName();
+        final String scoped = String.format("%s.%s.%s", prefix, scope, key);
+        final String unscoped = String.format("%s.%s", prefix, key);
         return System.getProperty(scoped, System.getProperty(unscoped));
     }
 }
