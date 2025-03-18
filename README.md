@@ -36,6 +36,10 @@ These properties can be defined for a specific scope (`user` or `system`). If no
 - `br.dev.jadl.prefs.MongoDBPreferences.{scope}.url` - The MongoDB connection URL (e.g., `mongodb://localhost:27017/database`).
 - `br.dev.jadl.prefs.MongoDBPreferences.{scope}.collection` - The collection where preferences will be stored.
 
+You can specify the collection using the url property in the format `mongodb://localhost:27017/database.collection`.
+In this case, you can omit the `br.dev.jadl.prefs.MongoDBPreferences.{scope}.collection` property.
+If both are specified, the collection defined in the url will take precedence.
+
 ### **Running Your Application**
 
 You can define the system properties from the command line, through a configuration file, or dynamically at runtime.
