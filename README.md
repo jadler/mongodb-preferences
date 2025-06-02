@@ -22,7 +22,7 @@ Add the following dependency to your project:
 <dependency>
     <groupId>br.dev.jadl.preferences</groupId>
     <artifactId>mongodb-preferences</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 

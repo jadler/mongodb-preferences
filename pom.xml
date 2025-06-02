@@ -64,6 +64,12 @@
             <version>5.12.1</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>br.dev.jadl.preferences</groupId>
+            <artifactId>preferences-tests-suite</artifactId>
+            <version>1.0.0</version>
+            <scope>test</scope>
+        </dependency>
 
         <!-- Testcontainer and MongoDB dependencies -->
         <dependency>

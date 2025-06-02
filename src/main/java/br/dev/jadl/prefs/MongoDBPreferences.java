@@ -1,11 +1,13 @@
 package br.dev.jadl.prefs;
 
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoCursor;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.ReplaceOptions;
 
-import java.util.ArrayList;
 import java.util.prefs.AbstractPreferences;
+import java.util.stream.StreamSupport;
 
 import org.bson.Document;
 
@@ -20,16 +22,18 @@ public class MongoDBPreferences extends AbstractPreferences {
     private MongoDBPreferences(final AbstractPreferences parent, final String node, final MongoCollection<Document> collection) {
         super(parent, node);
         this.collection = collection;
+
+        this.collection.insertOne(document());
     }
 
     @Override
     protected void putSpi(final String key, final String value) {
-        final ReplaceOptions upsert = new ReplaceOptions().upsert(true);
 
         final Document olddoc = document(key);
         final Document newdoc = document(key, value);
+        final ReplaceOptions upsert = new ReplaceOptions().upsert(true);
 
-        collection.replaceOne(olddoc, newdoc, upsert);
+        this.collection.replaceOne(olddoc, newdoc, upsert);
     }
 
     @Override
@@ -40,29 +44,37 @@ public class MongoDBPreferences extends AbstractPreferences {
 
     @Override
     protected void removeSpi(final String key) {
-        collection.deleteOne(document(key));
+        this.collection.deleteOne(document(key));
     }
 
     @Override
     protected void removeNodeSpi() {
-        collection.deleteMany(new Document("node", this.absolutePath()));
+        this.collection.deleteMany(new Document("node", this.absolutePath()));
     }
 
     @Override
     protected String[] keysSpi() {
-        try (MongoCursor<Document> cursor = collection.find().iterator()) {
-            final ArrayList<String> keys = new ArrayList<>();
-            while (cursor.hasNext()) {
-                keys.add(cursor.next().getString("key"));
-            }
+        final FindIterable<Document> projection = this.collection
+            .find(Filters.eq("node", this.absolutePath()))
+            .projection(Projections.include("key"));
 
-            return keys.toArray(String[]::new);
-        }
+        return StreamSupport.stream(projection.spliterator(), false)
+            .map(document -> document.getString("key"))
+            .filter(key -> key != null)
+            .toArray(String[]::new);
     }
 
     @Override
     protected String[] childrenNamesSpi() {
-        return new String[0];
+        final FindIterable<Document> projection = this.collection
+            .find(Filters.regex("node", "^" + this.absolutePath() + "[^/]+$"))
+            .projection(Projections.include("node"));
+
+        return StreamSupport.stream(projection.spliterator(), false)
+            .map(document -> document.getString("node"))
+            .map(document -> document.substring(this.absolutePath().length()))
+            .filter(node -> node != null)
+            .toArray(String[]::new);
     }
 
     @Override
@@ -80,8 +92,12 @@ public class MongoDBPreferences extends AbstractPreferences {
         // Not needed for  MongoDB
     }
 
+    private Document document() {
+        return new Document().append("node", this.absolutePath());
+    }
+
     private Document document(final String key) {
-        return new Document().append("node", this.absolutePath()).append("key", key);
+        return document().append("key", key);
     }
 
     private Document document(final String key, final String value) {
